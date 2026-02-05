@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cmath>
+#include <cctype>
 
 // Optional heavy dependencies (not used on typical Arduino builds). Guard with macros if needed.
 #if !defined(ARDUINO)
@@ -90,7 +91,8 @@ std::string BGrid::ddToBGrid(double latitude, double longitude, int level) const
 
     // Normalize lon/lat to [0,1). Using nextafter to avoid 1.0 at max input.
     double x = (longitude + 180.0) / 360.0; // [0,1]
-    double y = (latitude  +  90.0) / 180.0; // [0,1]
+    // Match JS: y grows from north to south.
+    double y = (90.0 - latitude) / 180.0; // [0,1]
     const double eps = 1e-12;
     if (x >= 1.0) x = 1.0 - eps;
     if (y >= 1.0) y = 1.0 - eps;
@@ -142,8 +144,10 @@ std::pair<double, double> BGrid::bGridToDD(const std::string& bgridString) const
 
         minLon = minLon + col * lonWidth;
         maxLon = minLon + lonWidth;
-        minLat = minLat + row * latHeight;
-        maxLat = minLat + latHeight;
+        const double newMaxLat = maxLat - row * latHeight;
+        const double newMinLat = newMaxLat - latHeight;
+        minLat = newMinLat;
+        maxLat = newMaxLat;
     }
 
     const double lon = (minLon + maxLon) * 0.5;
@@ -175,14 +179,20 @@ std::string BGrid::decodeFromWords(const std::string& wordsCsv, const std::strin
 
     // Build word->index map on the fly; 2048 elements -> O(2048) per call acceptable for ESP32.
     std::map<std::string, int> rev;
-    for (size_t i = 0; i < words.size(); ++i) rev[words[i]] = static_cast<int>(i) + 1; // store 1-based
+    for (size_t i = 0; i < words.size(); ++i) {
+        std::string key = words[i];
+        for (char& c : key) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        rev[key] = static_cast<int>(i) + 1; // store 1-based
+    }
 
     std::vector<std::string> tokens; split(wordsCsv, tokens, ',');
     if (tokens.empty() || tokens.size() > 4) throw std::invalid_argument("Expect 1..4 BIP39 words");
 
     std::vector<std::string> indices; indices.reserve(tokens.size());
     for (auto& w : tokens) {
-        auto jt = rev.find(w);
+        std::string key = w;
+        for (char& c : key) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        auto jt = rev.find(key);
         if (jt == rev.end()) throw std::runtime_error("Word not in language list: " + w);
         indices.push_back(std::to_string(jt->second));
     }

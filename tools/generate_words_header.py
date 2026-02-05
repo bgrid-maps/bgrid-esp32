@@ -4,11 +4,11 @@ import os
 from pathlib import Path
 
 # Generates BGridWords.h from src/bip39-wordlist JSONs.
-# Output: BGridWords.h in the same directory as this script's parent (BGrid/)
+# Output: src/BGridWords.h at the repository root.
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / 'src' / 'bip39-wordlist'
-OUT = ROOT / 'BGrid' / 'BGridWords.h'
+OUT = ROOT / 'src' / 'BGridWords.h'
 
 LANG_MAP = {
     'bip39-en.json': 'en',

@@ -1,11 +1,14 @@
 #include <BGrid.h>
 
+// NOTE: Desktop-only example. loadLanguages() is not supported on Arduino builds.
+// Keep this file for reference; on ESP32 use embedded wordlists instead.
+
 BGrid bgrid;
 
 void setup() {
     Serial.begin(115200);
 
-    // Load languages from the bip39-wordlist directory
+    // Load languages from the bip39-wordlist directory (desktop use only)
     try {
         bgrid.loadLanguages("src/bip39-wordlist");
         Serial.println("Languages loaded successfully.");
